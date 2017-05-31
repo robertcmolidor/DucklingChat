@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Migrations.Model;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -8,6 +9,7 @@ using System.Web.Http;
 using DucklingChatAPI.Infrastructure;
 using DucklingChatAPI.Models;
 using Microsoft.AspNet.Identity;
+using Newtonsoft.Json;
 
 namespace DucklingChatAPI.Controllers
 {
@@ -47,6 +49,37 @@ namespace DucklingChatAPI.Controllers
 
             return NotFound();
 
+        }
+
+        [AllowAnonymous]
+        [Route("Login")]
+        public async Task<string> Login(UserLoginModel input)
+        {
+            var username = Services.EncodingHelper.DecodeFrom64(input.Username);
+            var password = Services.EncodingHelper.DecodeFrom64(input.Password);
+
+            var client = new HttpClient
+            {
+                BaseAddress =new Uri("http://localhost:58720")
+            };
+            var request = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("Username", username),
+                new KeyValuePair<string, string>("Password", username),
+                new KeyValuePair<string, string>("grant_type", "password")
+            });
+            var response = await client.PostAsync("/oauth/token", request);
+                
+            var content = await response.Content.ReadAsStringAsync();
+            var jwt = JsonConvert.DeserializeObject<string>(content);
+
+
+            if (jwt == null)
+            {
+                //login failed
+                return null;
+            }
+            return jwt;
         }
         [AllowAnonymous]
         [Route("create")]
